@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
+#import matplotlib.pyplot as plt
+#import seaborn as sns
 import warnings
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.linear_model import LogisticRegression
-# import xgboost as xgb
-# from xgboost import plot_importance
+import xgboost as xgb
+from xgboost import plot_importance
 from datetime import datetime
 
 warnings.filterwarnings('ignore')
@@ -22,6 +22,8 @@ class DelayModel:
         self
     ):
         self._model = None # Model should be saved in this attribute.
+        self.model_weights = None
+        self.scale = None
 
     def preprocess(
         self,
@@ -100,36 +102,22 @@ class DelayModel:
         threshold_in_minutes = 15
         data['delay'] = np.where(data['min_diff'] > threshold_in_minutes, 1, 0)
 
+        #Spliting the data (preparing for model training)
+        training_data = shuffle(data[['OPERA', 'MES', 'TIPOVUELO', 'SIGLADES', 'DIANOM', 'delay']], random_state = 111)
 
-        if target_column:
-            #Get target column from dataset
-            target = data[target_column]
-            
-            #Drop the target column from dataset
-            data.drop([target_column], axis=1, inplace=True)
+        features = pd.concat([
+            pd.get_dummies(data['OPERA'], prefix = 'OPERA'),
+            pd.get_dummies(data['TIPOVUELO'], prefix = 'TIPOVUELO'), 
+            pd.get_dummies(data['MES'], prefix = 'MES')], 
+            axis = 1
+        )
 
-            return data, target 
+        target = data['delay']
 
-        else:
-            return data
-
-    def fit(
-        self,
-        features: pd.DataFrame,
-        target: pd.DataFrame
-    ) -> None:
-        """
-        Fit model with preprocessed data.
-
-        Args:
-            features (pd.DataFrame): preprocessed data.
-            target (pd.DataFrame): target.
-        """
-        # Split the data into training and test sets
-        x_train, x_test, y_train, y_test = train_test_split(features[top_10_features], target, test_size = 0.33, random_state = 42)
+        x_train, x_test, y_train, y_test = train_test_split(features, target, test_size=0.33, random_state=42)
 
         top_10_features = [
-            "OPERA_Latin American Wings", 
+            "OPERA_Latin American Wings",
             "MES_7",
             "MES_10",
             "OPERA_Grupo LATAM",
@@ -144,15 +132,35 @@ class DelayModel:
         #Balancing data to improve model's performance
         n_y0 = len(y_train[y_train == 0])
         n_y1 = len(y_train[y_train == 1])
-        scale = n_y0/n_y1
+        self.model_weights = {1: n_y0/len(y_train), 0: n_y1/len(y_train)}
 
-        #Train the model using XBG 
-        # self._model = xgb.XGBClassifier(random_state=1, learning_rate=0.01, scale_pos_weight = scale)
-        # self._model.fit(x_train, y_train)
+        #Improve the model
+        x_train2, x_test2, y_train2, y_test2 = train_test_split(features[top_10_features], target, test_size = 0.33, random_state = 42)
 
+        target = pd.DataFrame(y_train2, columns=['delay'])
+        features = x_train2
+
+        if target_column:
+            return features, target
+        else:
+            return x_test2
+
+
+    def fit(
+        self,
+        features: pd.DataFrame,
+        target: pd.DataFrame
+    ) -> None:
+        """
+        Fit model with preprocessed data.
+
+        Args:
+            features (pd.DataFrame): preprocessed data.
+            target (pd.DataFrame): target.
+        """
         #Train the model using LR
-        self._model = LogisticRegression(class_weight={1: n_y0/len(y_train), 0: n_y1/len(y_train)})
-        self._model.fit(x_train, y_train)
+        self._model = LogisticRegression(class_weight=self.model_weights)
+        self._model.fit(features, target)
 
 
     def predict(
@@ -169,5 +177,6 @@ class DelayModel:
             (List[int]): predicted targets.
         """
         #Make predictions
-        model_preds = self._model.predict(features)
-        return model_preds
+        reg_y_preds = self._model.predict(features)
+        reg_y_preds_list = reg_y_preds.tolist() 
+        return reg_y_preds_list
