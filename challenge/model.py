@@ -7,8 +7,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.linear_model import LogisticRegression
-import xgboost as xgb
-from xgboost import plot_importance
 from datetime import datetime
 
 warnings.filterwarnings('ignore')
