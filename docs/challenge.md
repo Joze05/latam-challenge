@@ -23,10 +23,24 @@ This is my project of the flight delay predictor, in which, by means of AI, we w
 
 - **Test NEW**❗: Solved the routing and requirements problem; now everything works as it should, and you can run the tests if you want, besides being considered necessary for the CI/CD in my opinion.
 
+- **CI/CD**: For the CI/CD, I decided to define a personal workflow based on how I worked on my project:
+    - ``CI``: For the CI, I chose to run the tests every time the 'dev' branch was pushed. I decided to do this because all the changes I make to my code go in this branch, and I think it is important to run the tests to verify that nothing has been changed to damage the tests because that means that our code is affecting the service.
+    - ``CD``: For the CD, I made it to display (in the instance) the changes made every time a pull request is made from the dev branch to main. This is because every time valid changes are made in dev, I put them in main by means of a PR. This way, every time I pass code from dev to main, it is ready for production.
+
+    I want to mention that this is my first time doing CI/CD, so apologies if the workflow is obviously flawed.
+
 - **Deployment**: The API was deployed in a GCP instance as sugested. I want to say that I also have knowledge of AWS services and Terraform management as a plus.
 
 
-## Run locally
+## Use the API
+
+You can easily make use of the API through the Swagger interface by using this URL:
+
+```sh
+http://35.209.10.24:8000/docs
+```
+
+## Run service locally
 
 1. First, we build the project image with the following command:
 
@@ -39,6 +53,7 @@ docker build -t delay-image .
 ```sh
 docker run -d -p 8000:8000 --name delay-container delay-image
 ```
+
 
 ## Comments
 
