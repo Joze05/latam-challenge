@@ -25,10 +25,10 @@ jobs:
 
     - name: Deploy to GCP instance
       run: |
-          ssh -i ~/.ssh/keyfile -o StrictHostKeyChecking=no ${{ env.USERNAME }}@${{ env.INSTANCE_IP }} <<EOF
-          cd latam-challenge
-          sudo docker build -t delay-image .
-          sudo docker stop delay-container || true
-          sudo docker rm delay-container || true
-          sudo docker run -d -p 8000:8000 --name delay-container delay-image
+        ssh -i ~/.ssh/keyfile -o StrictHostKeyChecking=no ${{ env.USERNAME }}@${{ env.INSTANCE_IP }} <<EOF
+        cd latam-challenge
+        sudo docker build -t delay-image .
+        sudo docker stop delay-container || true
+        sudo docker rm delay-container || true
+        sudo docker run -d -p 8000:8000 --name delay-container delay-image
         EOF
