@@ -5,7 +5,7 @@ on:
     branches: [ main ] 
 
 env:
-  INSTANCE_IP: '34.139.192.71'
+  INSTANCE_IP: '35.209.10.24'
   USERNAME: ubuntu
   KEYFILE: ${{ secrets.LATAM_KEYFILE }}
 
