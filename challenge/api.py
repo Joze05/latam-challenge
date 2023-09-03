@@ -1,14 +1,34 @@
 from fastapi import FastAPI , HTTPException
 import pandas as pd
 from pydantic import BaseModel, validator
-from model import DelayModel
 from typing import List
+import os
+import importlib
+
+# Obtener la ruta del directorio actual
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construir la ruta relativa al módulo model.py
+module_path = os.path.join(current_dir, '..', 'challenge', 'model.py')
+
+# Obtener el nombre del módulo a partir de la ruta
+module_name = os.path.splitext(os.path.basename(module_path))[0]
+
+# Importar el módulo utilizando importlib
+spec = importlib.util.spec_from_file_location(module_name, module_path)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
 
 app = FastAPI()
 
 # Crea una instancia de la clase DelayModel y carga el modelo entrenado
-delay_model = DelayModel()
-modelo_guardado = "./model_delay.pkl"
+delay_model = module.DelayModel()
+
+# Obtener la ruta del directorio actual del script
+actual_folder = os.path.dirname(os.path.abspath(__file__))
+
+# Definir la ruta relativa al archivo del modelo
+saved_model = os.path.join(actual_folder, 'model_delay.pkl')
 
 class Flight(BaseModel):
     OPERA: str
@@ -85,7 +105,7 @@ async def post_predict(request: PredictRequest) -> dict:
     df_encoded = df_encoded[model_columns]
 
     # Se carga el modelo para hacer una predicción
-    delay_model.load("./model_delay.pkl")
+    delay_model.load(saved_model)
 
     # Utilizamos el modelo para hacer una predicción
     prediction = delay_model.predict(df_encoded)

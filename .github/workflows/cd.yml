@@ -1,0 +1,35 @@
+name: 'Continuous Delivery'
+
+on:
+  pull_request:
+    branches: [ main ] 
+
+env:
+  INSTANCE_IP: '34.139.192.71'
+  USERNAME: ubuntu
+  KEYFILE: ${{ secrets.LATAM_KEYFILE }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ env.KEYFILE }}" > ~/.ssh/keyfile
+        chmod 600 ~/.ssh/keyfile
+
+    - name: Deploy to GCP instance
+      run: |
+        ssh -i ~/.ssh/keyfile -o StrictHostKeyChecking=no ${{ env.USERNAME }}@${{ env.INSTANCE_IP }} <<EOF
+          # Commands to build and run Docker image
+          cd latam-challenge
+          sudo docker build -t delay-image .
+          sudo docker stop delay-container || true
+          sudo docker rm delay-container || true
+          sudo docker run -d -p 8000:8000 --name delay-container delay-image
+        EOF
