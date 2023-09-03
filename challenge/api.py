@@ -1,7 +1,7 @@
 from fastapi import FastAPI , HTTPException
 import pandas as pd
 from pydantic import BaseModel, validator
-from challenge.model import DelayModel
+from model import DelayModel
 from typing import List
 
 app = FastAPI()
@@ -55,53 +55,44 @@ async def get_health() -> dict:
 
 @app.post("/predict", status_code=200)
 async def post_predict(request: PredictRequest) -> dict:
-    #try:
-    # Accedemos a los valores de los atributos OPERA, TIPOVUELO y MES
-    opera = request.flights[0].OPERA
-    tipovuelo = request.flights[0].TIPOVUELO
-    mes = request.flights[0].MES
+    try:
+        # Accedemos a los valores de los atributos OPERA, TIPOVUELO y MES
+        opera = request.flights[0].OPERA
+        tipovuelo = request.flights[0].TIPOVUELO
+        mes = request.flights[0].MES
 
-    # Creamos un DataFrame con los datos
-    df = pd.DataFrame({"OPERA": [opera], "TIPOVUELO": [tipovuelo], "MES": [mes]})
+        # Creamos un DataFrame con los datos
+        df = pd.DataFrame({"OPERA": [opera], "TIPOVUELO": [tipovuelo], "MES": [mes]})
 
-    #df = pd.DataFrame(request.flights)
-    #print(df.columns)
-    # Aplicamos la codificación one-hot a las columnas
-    df_encoded = pd.get_dummies(df, columns=["OPERA", "TIPOVUELO", "MES"])
+        # Aplicamos la codificación one-hot a las columnas
+        df_encoded = pd.get_dummies(df, columns=["OPERA", "TIPOVUELO", "MES"])
 
-    # print(df_encoded)
+        model_columns = ['OPERA_Aerolineas Argentinas', 'OPERA_Aeromexico', 'OPERA_Air Canada',
+            'OPERA_Air France', 'OPERA_Alitalia', 'OPERA_American Airlines',
+            'OPERA_Austral', 'OPERA_Avianca', 'OPERA_British Airways', 'OPERA_Copa Air',
+            'OPERA_Delta Air', 'OPERA_Gol Trans', 'OPERA_Grupo LATAM', 'OPERA_Iberia',
+            'OPERA_JetSmart SPA', 'OPERA_K.L.M.', 'OPERA_Lacsa',
+            'OPERA_Latin American Wings', 'OPERA_Oceanair Linhas Aereas',
+            'OPERA_Plus Ultra Lineas Aereas', 'OPERA_Qantas Airways',
+            'OPERA_Sky Airline', 'OPERA_United Airlines', 'TIPOVUELO_I', 'TIPOVUELO_N',
+            'MES_1', 'MES_2', 'MES_3', 'MES_4', 'MES_5', 'MES_6', 'MES_7', 'MES_8', 'MES_9',
+            'MES_10', 'MES_11', 'MES_12']
 
-    # # # Aseguramos que el DataFrame tenga las mismas columnas que el modelo
-    # # model_columns = ['OPERA_Latin American Wings', 'MES_7', 'MES_10', 'OPERA_Grupo LATAM', 'MES_12', 'TIPOVUELO_I', 'MES_4', 'MES_11', 'OPERA_Sky Airline', 'OPERA_Copa Air']
-    model_columns = ['OPERA_Aerolineas Argentinas', 'OPERA_Aeromexico', 'OPERA_Air Canada',
-        'OPERA_Air France', 'OPERA_Alitalia', 'OPERA_American Airlines',
-        'OPERA_Austral', 'OPERA_Avianca', 'OPERA_British Airways', 'OPERA_Copa Air',
-        'OPERA_Delta Air', 'OPERA_Gol Trans', 'OPERA_Grupo LATAM', 'OPERA_Iberia',
-        'OPERA_JetSmart SPA', 'OPERA_K.L.M.', 'OPERA_Lacsa',
-        'OPERA_Latin American Wings', 'OPERA_Oceanair Linhas Aereas',
-        'OPERA_Plus Ultra Lineas Aereas', 'OPERA_Qantas Airways',
-        'OPERA_Sky Airline', 'OPERA_United Airlines', 'TIPOVUELO_I', 'TIPOVUELO_N',
-        'MES_1', 'MES_2', 'MES_3', 'MES_4', 'MES_5', 'MES_6', 'MES_7', 'MES_8', 'MES_9',
-        'MES_10', 'MES_11', 'MES_12']
+        for col in model_columns:
+            if col not in df_encoded.columns:
+                df_encoded[col] = 0
 
-    #print(model_columns)
+        # Reordenamos las columnas para que coincidan con el orden del modelo
+        df_encoded = df_encoded[model_columns]
 
-    for col in model_columns:
-        if col not in df_encoded.columns:
-            df_encoded[col] = 0
+        # Se carga el modelo para hacer una predicción
+        delay_model.load("./model_delay.pkl")
 
-    # Reordenamos las columnas para que coincidan con el orden del modelo
-    df_encoded = df_encoded[model_columns]
+        # Utilizamos el modelo para hacer una predicción
+        prediction = delay_model.predict(df_encoded)
 
-    print(df_encoded)
+        #Devuelve la predicción como respuesta
+        return {"predict": prediction}
 
-    delay_model.load("model_delay.pkl")
-
-    # Utilizamos el modelo para hacer una predicción
-    prediction = delay_model.predict(df_encoded)
-
-    #Devuelve la predicción como respuesta
-    return {"predict": prediction}
-    #return {"hola": "test"}
-    # except:
-    #     return {"error": "No se encontraron datos de vuelo"}
+    except:
+        return {"error": "No se encontraron datos de vuelo"}
