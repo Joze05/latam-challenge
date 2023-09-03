@@ -8,6 +8,7 @@ from sklearn.utils import shuffle
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.linear_model import LogisticRegression
 from datetime import datetime
+import joblib
 
 warnings.filterwarnings('ignore')
 
@@ -178,3 +179,40 @@ class DelayModel:
         reg_y_preds = self._model.predict(features)
         reg_y_preds_list = reg_y_preds.tolist() 
         return reg_y_preds_list
+    
+
+    def save(self, filename: str) -> None:
+        """
+        Save the model to a file.
+
+        Args:
+            filename (str): The path to the file where the model will be saved.
+        """
+        joblib.dump(self._model, filename)
+
+
+    def load(self, filename: str) -> None:
+        """
+        Load the model from a file.
+
+        Args:
+            filename (str): The path to the file where the model is saved.
+        """
+        self._model = joblib.load(filename)
+    
+
+if __name__ == "__main__":
+    # Carga tus datos desde un archivo CSV (reemplaza 'tu_archivo_de_datos.csv' con tu archivo real)
+    data = pd.read_csv(filepath_or_buffer="./../data/data.csv")
+
+    # Crea una instancia de la clase DelayModel
+    delay_model = DelayModel()
+
+    # Preprocesa tus datos
+    features, target = delay_model.preprocess(data, target_column="delay")
+
+    # Entrena el modelo
+    delay_model.fit(features, target)
+
+    # Guarda el modelo en un archivo
+    delay_model.save(filename = "model_delay.pkl")
